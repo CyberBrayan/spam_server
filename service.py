@@ -25,22 +25,14 @@ def classify_texts():
     if not isinstance(texts, list):
         return jsonify({"error": "'texts' debe ser una lista"}), 400
 
-    num_workers = min(len(texts), os.cpu_count())  # Número óptimo de procesos
+    num_workers = min(len(texts), 8)  # 🔹 Limitar a 8 workers en lugar de usar `os.cpu_count()`
 
-    # 🔥 PROCESAMIENTO CON MULTIPROCESOS 🔥
-    with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
+    # 🔥 PROCESAMIENTO CON MULTIHILOS (más rápido que procesos)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
         results = list(executor.map(process_text, texts))
 
     return jsonify(results), 200
 
-
 if __name__ == '__main__':
-    # Verificamos si el puerto fue pasado como argumento en la línea de comandos
-    port = 5000  # Puerto por defecto
-    if len(sys.argv) > 1:
-        try:
-            port = int(sys.argv[1])  # Si hay argumento, lo usamos como puerto
-        except ValueError:
-            print("El argumento proporcionado no es un puerto válido. Usando el puerto por defecto 5000.")
-
-    app.run(host='0.0.0.0', port=port, debug=True)
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
